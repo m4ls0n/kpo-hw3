@@ -1,0 +1,4 @@
+This is the solution for assignment 1 about sorting algorithms.
+We implement quick sort, merge sort and insertion sort.
+The program reads numbers from input and prints them sorted.
+The explanation describes time complexity O(n log n).
