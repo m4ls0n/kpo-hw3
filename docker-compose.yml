@@ -1,0 +1,62 @@
+version: '3.9'
+
+services:
+  db:
+    image: postgres:16
+    container_name: antiplag_db
+    environment:
+      POSTGRES_USER: antiplag
+      POSTGRES_PASSWORD: antiplag
+      POSTGRES_DB: antiplag
+    ports:
+      - "5432:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+
+  filestorage:
+    build:
+      context: .
+      dockerfile: Dockerfile.storage
+    container_name: antiplag_filestorage
+    environment:
+      ASPNETCORE_URLS: http://+:80
+      STORAGE_ROOT: /files
+    volumes:
+      - files-data:/files
+    ports:
+      - "8081:80"
+    depends_on:
+      - db
+
+  analysis:
+    build:
+      context: .
+      dockerfile: Dockerfile.analysis
+    container_name: antiplag_analysis
+    environment:
+      ASPNETCORE_URLS: http://+:80
+      POSTGRES_CONNECTION_STRING: Host=db;Port=5432;Database=antiplag;Username=antiplag;Password=antiplag
+    depends_on:
+      - db
+
+  gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile.gateway
+    container_name: antiplag_gateway
+    environment:
+      ASPNETCORE_URLS: http://+:80
+      POSTGRES_CONNECTION_STRING: Host=db;Port=5432;Database=antiplag;Username=antiplag;Password=antiplag
+      FileStorage__BaseUrl: http://filestorage
+      Analysis__BaseUrl: http://analysis
+    ports:
+      - "8080:80"
+    depends_on:
+      - db
+      - filestorage
+      - analysis
+
+volumes:
+  db-data:
+  files-data:
